@@ -1,0 +1,19 @@
+{
+  "network": "fuji",
+  "chainId": 43113,
+  "deployedAt": "2026-07-02",
+  "deployer": "0x9F7CFff20D7cBD666C9Af665ABaAbe43E5Eefc0F",
+  "source": "vendor/EncryptedERC @ fuji-deploy (fork of ava-labs/EncryptedERC@c7eb0e0)",
+  "verifiers": "prod (audited trusted setup, contracts/prod)",
+  "eercDecimals": 6,
+  "contracts": {
+    "registrationVerifier": "0x7eDFdC050e580Ac65932308ea3Ef61346361469a",
+    "mintVerifier": "0x6bC7F7068D7921c083F456f5Cf02Af1EaF11101f",
+    "withdrawVerifier": "0xAF97077D96C78004f7431d87203429B88D1aEC9d",
+    "transferVerifier": "0xE7dC9D868430FbBC38b764A1F9f5B75Ba96b419c",
+    "babyJubJub": "0xEC26Ff9755d27DE581e3f0F719515e20dbd579c1",
+    "registrar": "0xf85174CbdE66B05f4601c1d627A130c7969DCD9A",
+    "encryptedERC": "0x2A60EF46E6D65580144c734592AA8D163A97EFdd",
+    "testERC20": "0xB7f18b4180E6d79e7BDE2907e847B9A17372Ebca"
+  }
+}
