@@ -8,22 +8,7 @@ Payments settle through eERC (Encrypted ERC), AvaCloud's confidential token stan
 
 ## How it works
 
-```
-Agent (4337 smart account)          Facilitator                 API server
-        |                                |                           |
-        |--- GET /resource ------------------------------------------>
-        |<-- 402 + eerc-exact requirements ---------------------------
-        |                                |                           |
-   generate transfer proof              |                           |
-   (zk, client side, ~2s)               |                           |
-        |                                |                           |
-        |--- X-PAYMENT: UserOp --------->|                           |
-        |                            verify proof                    |
-        |                            settle via bundler              |
-        |                            decrypt amount (auditor key)    |
-        |                                |--- payment confirmed ---->|
-        |<-- 200 + resource -------------------------------------------
-```
+![cloak402 payment flow: agent requests, gets 402 with eerc-exact terms, builds a zk proof of an encrypted transfer, retries with X-PAYMENT, the facilitator verifies and self-bundles settlement to Avalanche C-Chain, and the API returns 200](docs/cloak402-flow.png)
 
 - The agent's wallet is an ERC-4337 smart account. eERC binds transfers to msg.sender, so the account submits its own transfer through the EntryPoint while a paymaster covers gas. The agent never needs AVAX.
 - The facilitator implements a custom x402 scheme, `eerc-exact`, registered for `eip155:43113` (Fuji). It verifies the zk proof, submits the UserOp through a bundler, and confirms the encrypted amount using the auditor key.
