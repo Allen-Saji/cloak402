@@ -1,4 +1,4 @@
 [submodule "vendor/EncryptedERC"]
 	path = vendor/EncryptedERC
-	url = git@github.com:Allen-Saji/EncryptedERC.git
+	url = https://github.com/Allen-Saji/EncryptedERC.git
 	branch = fuji-deploy
