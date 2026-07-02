@@ -1,0 +1,12 @@
+{
+  "name": "cloak402",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Confidential x402 payments on Avalanche via eERC",
+  "author": "Allen Saji",
+  "license": "MIT",
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
