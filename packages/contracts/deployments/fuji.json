@@ -6,6 +6,12 @@
   "source": "vendor/EncryptedERC @ fuji-deploy (fork of ava-labs/EncryptedERC@c7eb0e0)",
   "verifiers": "prod (audited trusted setup, contracts/prod)",
   "eercDecimals": 6,
+  "erc4337": {
+    "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+    "entryPointVersion": "0.7",
+    "simpleAccountFactory": "0x91E60e0613810449d098b0b5Ec8b51A0FE8c8985",
+    "note": "canonical pre-existing deployments; facilitator self-bundles via handleOps"
+  },
   "contracts": {
     "registrationVerifier": "0x7eDFdC050e580Ac65932308ea3Ef61346361469a",
     "mintVerifier": "0x6bC7F7068D7921c083F456f5Cf02Af1EaF11101f",
