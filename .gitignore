@@ -10,3 +10,4 @@ cache/
 typechain-types/
 deployments/local*
 .DS_Store
+packages/demo/.state.json
