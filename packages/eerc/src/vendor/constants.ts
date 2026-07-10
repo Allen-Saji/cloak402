@@ -1,0 +1,6 @@
+// Vendored from ava-labs/EncryptedERC (fork Allen-Saji/EncryptedERC @ fuji-deploy), src/constants.ts
+// Apache-2.0. Copied so runtime packages do not depend on the hardhat workspace.
+export const BASE_POINT_ORDER =
+	2736030358979909402780800718157159386076813972158567259200215660948447373041n;
+export const BN254_SCALAR_FIELD =
+	21888242871839275222246405745257275088548364400416034343698204186575808495617n;
