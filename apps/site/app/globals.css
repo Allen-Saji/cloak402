@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: oklch(0.13 0.008 285);
+  --color-coal: oklch(0.17 0.01 285);
+  --color-ash: oklch(0.24 0.012 285);
+  --color-fog: oklch(0.62 0.015 285);
+  --color-bone: oklch(0.92 0.008 285);
+  --color-ember: oklch(0.62 0.21 27);
+  --color-ember-dim: oklch(0.45 0.16 27);
+  --color-cipher: oklch(0.75 0.12 27);
+
+  --font-display: var(--font-chakra), sans-serif;
+  --font-body: var(--font-instrument), sans-serif;
+  --font-mono: var(--font-jetbrains), monospace;
+
+  --animate-ticker: ticker 28s linear infinite;
+
+  @keyframes ticker {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-void);
+  color: var(--color-bone);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: var(--color-ember);
+  color: var(--color-void);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

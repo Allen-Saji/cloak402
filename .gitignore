@@ -11,3 +11,6 @@ typechain-types/
 deployments/local*
 .DS_Store
 packages/demo/.state.json
+.gstack/
+.next/
+*.tsbuildinfo
