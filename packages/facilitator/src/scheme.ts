@@ -87,6 +87,7 @@ export class EercExactFacilitator {
   private readonly verifier: ethers.Contract;
   private readonly accountIface = new ethers.Interface(SIMPLE_ACCOUNT_ABI);
   private readonly eercIface = new ethers.Interface(ENCRYPTED_ERC_ABI);
+  private tokenIdCache?: bigint;
 
   constructor(config: EercExactFacilitatorConfig) {
     this.signer = config.signer.connect(config.provider);
@@ -131,6 +132,14 @@ export class EercExactFacilitator {
 
   getSigners(_network: string): string[] {
     return [this.signer.address];
+  }
+
+  /** the eERC token id for the wrapped ERC20; immutable once set on-chain */
+  private async expectedTokenId(): Promise<bigint> {
+    if (this.tokenIdCache !== undefined) return this.tokenIdCache;
+    const id: bigint = await this.eerc.tokenIds(this.deployment.testERC20);
+    if (id !== 0n) this.tokenIdCache = id;
+    return id;
   }
 
   private decodePayment(payload: PaymentPayload): DecodedPayment {
@@ -214,28 +223,46 @@ export class EercExactFacilitator {
       );
     }
 
-    const expectedTokenId: bigint = await this.eerc.tokenIds(
-      this.deployment.testERC20,
-    );
+    // all chain reads are independent; issue them in one tick so the
+    // provider batches them into a single RPC round trip
+    const [
+      expectedTokenId,
+      senderRegistered,
+      receiverRegistered,
+      senderKeyRaw,
+      receiverKeyRaw,
+      balanceRaw,
+      proofOk,
+      nonce,
+    ] = await Promise.all([
+      this.expectedTokenId(),
+      this.registrar.isUserRegistered(payer) as Promise<boolean>,
+      this.registrar.isUserRegistered(receiver) as Promise<boolean>,
+      this.registrar.getUserPublicKey(payer),
+      this.registrar.getUserPublicKey(receiver),
+      this.eerc.balanceOf(payer, tokenId),
+      this.verifier.verifyProof(
+        proofPoints.a,
+        proofPoints.b,
+        proofPoints.c,
+        publicSignals,
+      ) as Promise<boolean>,
+      this.entryPoint.getNonce(payer, 0n) as Promise<bigint>,
+    ]);
+
     if (tokenId !== expectedTokenId) {
       return invalid("invalid_payment", "unexpected eERC token id", payer);
     }
 
     // proof is bound to the payer's registered key: eERC checks this at
     // execution via msg.sender; mirror it here so verify fails fast
-    const [senderRegistered, receiverRegistered] = await Promise.all([
-      this.registrar.isUserRegistered(payer),
-      this.registrar.isUserRegistered(receiver),
-    ]);
     if (!senderRegistered) {
       return invalid("invalid_payment", "payer account not registered in eERC", payer);
     }
     if (!receiverRegistered) {
       return invalid("invalid_payment", "payTo not registered in eERC", payer);
     }
-    const senderKey: bigint[] = (
-      await this.registrar.getUserPublicKey(payer)
-    ).map((x: bigint) => BigInt(x));
+    const senderKey: bigint[] = senderKeyRaw.map((x: bigint) => BigInt(x));
     const proofSenderKey = signalSlice(
       publicSignals,
       TRANSFER_SIGNALS.senderPublicKey,
@@ -247,9 +274,7 @@ export class EercExactFacilitator {
         payer,
       );
     }
-    const receiverKey: bigint[] = (
-      await this.registrar.getUserPublicKey(receiver)
-    ).map((x: bigint) => BigInt(x));
+    const receiverKey: bigint[] = receiverKeyRaw.map((x: bigint) => BigInt(x));
     const proofReceiverKey = signalSlice(
       publicSignals,
       TRANSFER_SIGNALS.receiverPublicKey,
@@ -267,7 +292,7 @@ export class EercExactFacilitator {
 
     // freshness / replay: the proof commits to the sender's current balance
     // ciphertext; a spent or stale proof cannot match the live one
-    const balance = toBalanceView(await this.eerc.balanceOf(payer, tokenId));
+    const balance = toBalanceView(balanceRaw);
     const proofBalance = [
       ...signalSlice(publicSignals, TRANSFER_SIGNALS.senderBalanceC1),
       ...signalSlice(publicSignals, TRANSFER_SIGNALS.senderBalanceC2),
@@ -315,18 +340,11 @@ export class EercExactFacilitator {
     }
 
     // the zk proof itself, via the audited on-chain verifier
-    const proofOk: boolean = await this.verifier.verifyProof(
-      proofPoints.a,
-      proofPoints.b,
-      proofPoints.c,
-      publicSignals,
-    );
     if (!proofOk) {
       return invalid("invalid_payment", "transfer proof does not verify", payer);
     }
 
     // userOp nonce must be current, otherwise settle will revert
-    const nonce: bigint = await this.entryPoint.getNonce(payer, 0n);
     if (userOp.nonce !== nonce) {
       return invalid(
         "invalid_payment",
@@ -359,7 +377,12 @@ export class EercExactFacilitator {
     const payer = decoded.userOp.sender;
 
     return this.queue.run(payer.toLowerCase(), async () => {
-      const check = await this.verify(payload, requirements);
+      // deposit read is only consumed on the success path; fetch it alongside
+      // the re-verify instead of after it
+      const [check, deposit] = await Promise.all([
+        this.verify(payload, requirements),
+        this.entryPoint.balanceOf(payer) as Promise<bigint>,
+      ]);
       if (!check.isValid) {
         return {
           success: false,
@@ -374,7 +397,6 @@ export class EercExactFacilitator {
       try {
         // sponsor gas: the payer's smart account pays its own prefund from
         // an EntryPoint deposit the facilitator keeps topped up
-        const deposit: bigint = await this.entryPoint.balanceOf(payer);
         if (deposit < this.depositMinWei) {
           const tx = await this.entryPoint.depositTo(payer, {
             value: this.depositTopUpWei,

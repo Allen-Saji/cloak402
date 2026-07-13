@@ -176,11 +176,14 @@ export default function EercExact() {
 
       <H2 id="latency">Latency</H2>
       <P>
-        Transfer proof generation is about 2s client side. A full paid request
-        (402, proof, verify, settle with on-chain inclusion, 200) measures
-        about 14s against public Fuji RPC with settle-before-respond.
-        Verify-only response with async settlement would cut this to roughly
-        proof time plus one roundtrip.
+        Transfer proof generation is about 2.4s client side. A full paid
+        request (402, proof, verify, settle with on-chain inclusion, 200)
+        measures about 8.7s against public Fuji RPC with settle-before-respond:
+        batched verify reads (one RPC round trip), 1s receipt polling matched
+        to Fuji&apos;s 2s blocks, and a client that builds the payment
+        UserOperation with batched reads. The floor is proof time plus one
+        block of inclusion. Verify-only response with async settlement would
+        cut this to roughly proof time plus one roundtrip.
       </P>
 
       <H2 id="signal-layout">Transfer circuit public signal layout</H2>

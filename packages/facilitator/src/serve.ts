@@ -15,7 +15,12 @@ const main = async () => {
   const rpcUrl = process.env.FUJI_RPC_URL ?? DEFAULT_RPC;
   const port = Number(process.env.PORT ?? 4021);
 
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  // Fuji produces blocks in ~2s; ethers' default 4s receipt polling adds
+  // dead time to every settle. staticNetwork skips per-call chainId probes.
+  const provider = new ethers.JsonRpcProvider(rpcUrl, undefined, {
+    staticNetwork: true,
+    pollingInterval: 1_000,
+  });
   const signer = new ethers.Wallet(key, provider);
   const auditorKeys = await deriveAuditorKeys(signer, FUJI_CHAIN_ID);
 

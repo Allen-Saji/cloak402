@@ -86,7 +86,7 @@ PAY_TO=0x... pnpm --filter @cloak402/server-demo start`}
         <li>
           Proof generation runs client-side and takes about 2 seconds on a
           laptop; a full paid request against public Fuji RPC measures about
-          14 seconds with settle-before-respond.
+          9 seconds with settle-before-respond.
         </li>
       </Ul>
 

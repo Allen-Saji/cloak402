@@ -46,7 +46,11 @@ export const loadOrCreateState = (): DemoState => {
 };
 
 export const getProvider = (): ethers.JsonRpcProvider =>
-  new ethers.JsonRpcProvider(process.env.FUJI_RPC_URL ?? DEFAULT_RPC);
+  // 1s polling to match Fuji's ~2s blocks; staticNetwork skips chainId probes
+  new ethers.JsonRpcProvider(process.env.FUJI_RPC_URL ?? DEFAULT_RPC, undefined, {
+    staticNetwork: true,
+    pollingInterval: 1_000,
+  });
 
 export const requireOperatorKey = (): string => {
   const key = process.env.FACILITATOR_PRIVATE_KEY;

@@ -90,7 +90,7 @@ The decrypted amount check is the confidential analogue of checking a USDC trans
 
 ## Latency
 
-Transfer proof generation is about 2s client side. A full paid request (402, proof, verify, settle with on-chain inclusion, 200) measures about 14s against public Fuji RPC with settle-before-respond. Verify-only response with async settlement would cut this to roughly proof time plus one roundtrip.
+Transfer proof generation is about 2.4s client side (reads, witness, Groth16 prove, sign). A full paid request (402, proof, verify, settle with on-chain inclusion, 200) measures about 8.7s against public Fuji RPC with settle-before-respond, down from about 14s before three optimizations: all independent chain reads in verify are issued in one tick so the provider batches them into a single RPC round trip (verify: 2.4s to 0.45s), receipt polling runs at 1s instead of the ethers 4s default to match Fuji's 2s blocks, and the client builds the payment UserOperation with batched reads plus a cached token id. The remaining floor is proof generation plus one block of inclusion time. Verify-only response with async settlement would cut this to roughly proof time plus one roundtrip, at the cost of serving the request before the transfer lands (and the response could no longer carry the settlement transaction hash).
 
 ## Transfer circuit public signal layout
 

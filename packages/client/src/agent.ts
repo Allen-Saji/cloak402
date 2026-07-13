@@ -60,6 +60,7 @@ export class CloakAgent {
   private readonly eerc: ethers.Contract;
   private readonly accountIface = new ethers.Interface(SIMPLE_ACCOUNT_ABI);
   private readonly erc20Iface = new ethers.Interface(ERC20_ABI);
+  private tokenIdCache?: bigint;
 
   private constructor(
     config: CloakAgentConfig,
@@ -123,9 +124,17 @@ export class CloakAgent {
     return code !== "0x";
   }
 
+  /** the eERC token id for the wrapped ERC20; immutable once set on-chain */
+  private async tokenId(): Promise<bigint> {
+    if (this.tokenIdCache !== undefined) return this.tokenIdCache;
+    const id: bigint = await this.eerc.tokenIds(this.deployment.testERC20);
+    if (id !== 0n) this.tokenIdCache = id;
+    return id;
+  }
+
   /** current confidential balance in eERC system units (6 decimals) */
   async getBalance(): Promise<bigint> {
-    const tokenId: bigint = await this.eerc.tokenIds(this.deployment.testERC20);
+    const tokenId = await this.tokenId();
     const view = toBalanceView(await this.eerc.balanceOf(this.account, tokenId));
     return recoverBalance(view, this.keys.raw);
   }
@@ -136,7 +145,10 @@ export class CloakAgent {
     data: string,
     gas: Partial<UserOpGasOptions> & { initCode?: string },
   ): Promise<PackedUserOperation> {
-    const feeData = await this.provider.getFeeData();
+    const [feeData, nonce] = await Promise.all([
+      this.provider.getFeeData(),
+      this.entryPoint.getNonce(this.account, 0n) as Promise<bigint>,
+    ]);
     const maxFeePerGas = (feeData.maxFeePerGas ?? 25_000_000_000n) * 2n;
     const maxPriorityFeePerGas =
       feeData.maxPriorityFeePerGas ?? 1_000_000_000n;
@@ -145,7 +157,6 @@ export class CloakAgent {
       0n,
       data,
     ]);
-    const nonce: bigint = await this.entryPoint.getNonce(this.account, 0n);
     const op = buildUserOp(
       this.account,
       nonce,
@@ -234,7 +245,7 @@ export class CloakAgent {
     payTo: string,
     amount: bigint,
   ): Promise<PackedUserOperation> {
-    const tokenId: bigint = await this.eerc.tokenIds(this.deployment.testERC20);
+    const tokenId = await this.tokenId();
     const [balanceResult, receiverKeyRaw, auditorKeyRaw] = await Promise.all([
       this.eerc.balanceOf(this.account, tokenId),
       this.registrar.getUserPublicKey(payTo),
